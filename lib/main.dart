@@ -1,77 +1,117 @@
 import 'package:flutter/material.dart';
-import 'package:fynoxfow/screens.dart';
 
-import 'models.dart';
+import 'data.dart';
+import 'home.dart';
+import 'onboarding.dart';
 
-void main() {
-  runApp(const FluxFlowApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const FynoxFowApp());
 }
 
-class FluxFlowApp extends StatelessWidget {
-  const FluxFlowApp({super.key});
+class FynoxFowApp extends StatefulWidget {
+  const FynoxFowApp({super.key});
+
+  static const primary = Color(0xFF4F46E5);
+  static const darkPrimary = Color(0xFF3730A3);
+  static const background = Color(0xFFF9FAFB);
+  static const ink = Color(0xFF111827);
+
+  @override
+  State<FynoxFowApp> createState() => _FynoxFowAppState();
+}
+
+class _FynoxFowAppState extends State<FynoxFowApp> {
+  final LocalStore _store = LocalStore();
+  bool? _onboardingDone;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStartup();
+  }
+
+  Future<void> _loadStartup() async {
+    final done = await _store.hasSeenOnboarding();
+
+    if (!mounted) return;
+    setState(() => _onboardingDone = done);
+  }
+
+  Future<void> _finishOnboarding() async {
+    await _store.setSeenOnboarding();
+
+    if (!mounted) return;
+    setState(() => _onboardingDone = true);
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'FluxFlow',
       debugShowCheckedModeBanner: false,
+      title: 'Fynox Flow',
       theme: ThemeData(
         useMaterial3: true,
-        scaffoldBackgroundColor: background,
+        scaffoldBackgroundColor: FynoxFowApp.background,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: primaryGreen,
+          seedColor: FynoxFowApp.primary,
           brightness: Brightness.light,
-        ).copyWith(
-          primary: primaryGreen,
-          secondary: accentGreen,
           surface: Colors.white,
         ),
-        inputDecorationTheme: InputDecorationTheme(
+        fontFamily: 'sans',
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          foregroundColor: FynoxFowApp.primary,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+        ),
+        cardTheme: const CardThemeData(
+          color: Colors.white,
+          elevation: 0,
+          margin: EdgeInsets.zero,
+        ),
+        navigationBarTheme: const NavigationBarThemeData(
+          backgroundColor: Colors.white,
+          indicatorColor: Color(0xFFE8EAF6),
+          height: 72,
+        ),
+        inputDecorationTheme: const InputDecorationTheme(
           filled: true,
-          fillColor: background,
+          fillColor: Color(0xFFF5F5FA),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide.none,
+            borderRadius: BorderRadius.all(Radius.circular(16)),
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: borderColor),
+            borderSide: BorderSide.none,
+            borderRadius: BorderRadius.all(Radius.circular(16)),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(
-              color: primaryGreen,
-              width: 1.5,
-            ),
+            borderSide: BorderSide(color: FynoxFowApp.primary, width: 1.5),
+            borderRadius: BorderRadius.all(Radius.circular(16)),
           ),
-        ),
-        snackBarTheme: SnackBarThemeData(
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: primaryGreen,
-          contentTextStyle: const TextStyle(color: Colors.white),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        textTheme: const TextTheme(
-          headlineMedium: TextStyle(
-            color: textDark,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.8,
-          ),
-          titleLarge: TextStyle(
-            color: textDark,
-            fontWeight: FontWeight.w800,
-          ),
-          titleMedium: TextStyle(
-            color: textDark,
-            fontWeight: FontWeight.w700,
-          ),
-          bodyLarge: TextStyle(color: textDark),
-          bodyMedium: TextStyle(color: mutedText),
         ),
       ),
-      home: const OnboardingScreen(),
+      home: _onboardingDone == null
+          ? const _StartupPage()
+          : _onboardingDone!
+              ? const HomeScreen()
+              : OnboardingScreen(onFinished: _finishOnboarding),
+    );
+  }
+}
+
+class _StartupPage extends StatelessWidget {
+  const _StartupPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: CircularProgressIndicator(
+          color: FynoxFowApp.primary,
+        ),
+      ),
     );
   }
 }
